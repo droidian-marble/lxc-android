@@ -17,14 +17,27 @@ find_partition_path() {
     # In case fstab provides /dev/mmcblk0p* lines
     for dir in by-partlabel by-name by-label by-path by-uuid by-partuuid by-id; do
         # On A/B systems not all of the partitions are duplicated, so we have to check with and without suffix
-        if [ -e "/dev/disk/$dir/$label$ab_slot_suffix" ]; then
+        if [ -b "/dev/disk/$dir/$label$ab_slot_suffix" ]; then
             path="/dev/disk/$dir/$label$ab_slot_suffix"
             break
-        elif [ -e "/dev/disk/$dir/$label" ]; then
+        elif [ -b "/dev/disk/$dir/$label" ]; then
             path="/dev/disk/$dir/$label"
             break
         fi
     done
+
+    if [ ! -b "$path" ]; then
+        if [ -b "/dev/mapper/dynpart-$label$ab_slot_suffix" ]; then
+            path="/dev/mapper/dynpart-$label$ab_slot_suffix"
+        elif [ -b "/dev/mapper/dynpart-$label" ]; then
+            path="/dev/mapper/dynpart-$label"
+        elif [ -b "/dev/mapper/dynpart-${label}_a" ] && [ ! -b "/dev/mapper/dynpart-${label}_b" ]; then
+            path="/dev/mapper/dynpart-${label}_a"
+        elif [ -b "/dev/mapper/dynpart-${label}_b" ] && [ ! -b "/dev/mapper/dynpart-${label}_a" ]; then
+            path="/dev/mapper/dynpart-${label}_b"
+        fi
+    fi
+
     echo $path
 }
 
